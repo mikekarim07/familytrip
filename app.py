@@ -10,20 +10,20 @@ import re
 #  CONFIGURACIÓN — ajusta estos valores antes de desplegar
 # ═══════════════════════════════════════════════════════════════
 
-SHEET_NAME = "FamilyTrip Europe 2025"
+SHEET_NAME = "FamilyTrip Europe 2026"
 
 PINS = {
-    "1234": {"nombre": "Papá",   "rol": "admin",    "emoji": "👨"},
-    "5678": {"nombre": "Mamá",   "rol": "coeditor", "emoji": "👩"},
-    "1111": {"nombre": "Hijo 1", "rol": "viewer",   "emoji": "🧒"},
-    "2222": {"nombre": "Hijo 2", "rol": "viewer",   "emoji": "🧒"},
+    "1921": {"nombre": "Papá",   "rol": "admin",    "emoji": "👨"},
+    "2115": {"nombre": "Mamá",   "rol": "coeditor", "emoji": "👩"},
+    "2408": {"nombre": "Analu", "rol": "viewer",   "emoji": "🧒"},
+    "2911": {"nombre": "Sebas", "rol": "viewer",   "emoji": "🧒"},
 }
 
 TC_EUR_MXN          = 21.50    # 1 EUR = ? MXN  — actualiza cuando quieras
 TC_USD_MXN          = 17.80    # 1 USD = ? MXN
 PRESUPUESTO_MXN     = 180_000  # Presupuesto total del viaje en pesos
 
-CIUDADES     = ["Madrid", "Barcelona", "París", "Roma", "Lisboa", "Amsterdam", "Otra"]
+CIUDADES     = ["Madrid", "Barcelona", "París", "Bruselas", "Brujas", "Strasburgo", "Milan", "Venecia", "Florencia", "Roma", "Napoles", "Capri", "Asturias", "Otros"]
 MONEDAS      = ["MXN", "EUR", "USD"]
 PAGADORES    = ["Papá", "Mamá"]
 RUBROS       = ["🏨 Hospedaje", "✈️ Vuelos", "🚆 Trenes", "🚗 Transporte local",
@@ -275,7 +275,7 @@ def formulario_nuevo_registro(rol: str):
             t_conf      = st.text_input("Código de confirmación")
             t_doc       = st.text_input("Link Google Drive (PDF / QR / boarding pass)")
         with c2:
-            t_fecha     = st.date_input("Fecha de salida", value=date(2025, 7, 13))
+            t_fecha     = st.date_input("Fecha de salida", value=date(2026, 7, 13))
             t_hora_sal  = st.time_input("Hora de salida")
             t_hora_llg  = st.time_input("Hora de llegada estimada")
             t_anticip   = st.number_input("Minutos de anticipación al punto de salida",
@@ -709,7 +709,7 @@ def modulo_documentos(rol: str):
 
 def main():
     st.set_page_config(
-        page_title="FamilyTrip Europe 2025",
+        page_title="FamilyTrip Europe 2026",
         page_icon="🌍",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -728,7 +728,7 @@ def main():
     emoji   = usuario["emoji"]
 
     with st.sidebar:
-        st.markdown("## 🌍 FamilyTrip\n**Europa 2025**")
+        st.markdown("## 🌍 FamilyTrip\n**Europa 2026**")
         st.divider()
         st.markdown(f"{emoji} **{nombre}**")
         st.caption(f"Rol: {rol.capitalize()}")
