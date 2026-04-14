@@ -48,11 +48,11 @@ def load_pins() -> dict:
     return pins
 
 def load_presupuesto() -> float:
-    """Lee presupuesto total MXN desde Secrets (default 200,000)."""
+    """Lee presupuesto total MXN desde Secrets (default 300,000)."""
     try:
-        return float(st.secrets.get("PRESUPUESTO_MXN", 200_000))
+        return float(st.secrets.get("PRESUPUESTO_MXN", 300_000))
     except Exception:
-        return 200_000.0
+        return 300_000.0
 
 # ═══════════════════════════════════════════════════════════════
 #  CONEXIÓN A GOOGLE SHEETS
