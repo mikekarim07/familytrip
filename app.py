@@ -10,7 +10,7 @@ import re
 #  CONSTANTES BASE (todo lo demás viene de Secrets o Sheets)
 # ═══════════════════════════════════════════════════════════════
 
-SHEET_NAME   = "FamilyTrip Europe 2025"
+SHEET_NAME   = "FamilyTrip Europe 2026"
 MONEDAS      = ["MXN", "EUR", "USD"]
 PAGADORES    = ["Papá", "Mamá"]
 RUBROS       = ["🏨 Hospedaje", "✈️ Vuelos", "🚆 Trenes", "🚗 Transporte local",
@@ -210,7 +210,7 @@ def login_screen():
         <div style='text-align:center;padding:2.5rem 0 1.5rem'>
             <div style='font-size:56px'>🌍</div>
             <h1 style='margin:0.4rem 0 0.2rem;font-size:1.9rem;font-weight:500'>
-                FamilyTrip Europe 2025
+                FamilyTrip Europe 2026
             </h1>
             <p style='color:#888;margin:0'>13 Jul – 15 Ago &nbsp;·&nbsp; ¡Nos vamos!</p>
         </div>
@@ -265,8 +265,8 @@ def formulario_nuevo_registro(rol: str):
             h_maps    = st.text_input("Link Google Maps")
         with c2:
             h_conf    = st.text_input("Nº de confirmación")
-            h_cin     = st.date_input("Check-in",  value=date(2025, 7, 13))
-            h_cout    = st.date_input("Check-out", value=date(2025, 7, 16))
+            h_cin     = st.date_input("Check-in",  value=date(2026, 7, 13))
+            h_cout    = st.date_input("Check-out", value=date(2026, 7, 16))
             h_pagador = st.selectbox("Pagado por", PAGADORES)
 
         noches = max((h_cout - h_cin).days, 1)
@@ -354,7 +354,7 @@ def formulario_nuevo_registro(rol: str):
             t_conf     = st.text_input("Código de confirmación")
             t_doc      = st.text_input("Link Google Drive (PDF / QR / boarding pass)")
         with c2:
-            t_fecha    = st.date_input("Fecha de salida", value=date(2025, 7, 13))
+            t_fecha    = st.date_input("Fecha de salida", value=date(2026, 7, 13))
             t_hora_sal = st.time_input("Hora de salida")
             t_hora_llg = st.time_input("Hora de llegada estimada")
             t_anticip  = st.number_input("Minutos de anticipación al punto de salida",
@@ -747,7 +747,7 @@ def modulo_documentos(rol: str):
 
 def main():
     st.set_page_config(
-        page_title="FamilyTrip Europe 2025",
+        page_title="FamilyTrip Europe 2026",
         page_icon="🌍",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -766,7 +766,7 @@ def main():
     emoji   = usuario["emoji"]
 
     with st.sidebar:
-        st.markdown("## 🌍 FamilyTrip\n**Europa 2025**")
+        st.markdown("## 🌍 FamilyTrip\n**Europa 2026**")
         st.divider()
         st.markdown(f"{emoji} **{nombre}**")
         st.caption(f"Rol: {rol.capitalize()}")
