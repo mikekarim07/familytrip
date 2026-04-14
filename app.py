@@ -23,7 +23,7 @@ TC_EUR_MXN          = 21.50    # 1 EUR = ? MXN  — actualiza cuando quieras
 TC_USD_MXN          = 17.80    # 1 USD = ? MXN
 PRESUPUESTO_MXN     = 180_000  # Presupuesto total del viaje en pesos
 
-CIUDADES     = ["Madrid", "Barcelona", "París", "Bruselas", "Brujas", "Strasburgo", "Milan", "Venecia", "Florencia", "Roma", "Napoles", "Capri", "Asturias", "Otros"]
+CIUDADES     = ["Mexico", "Madrid", "Barcelona", "París", "Bruselas", "Brujas", "Strasburgo", "Milan", "Venecia", "Florencia", "Roma", "Napoles", "Capri", "Asturias", "Otros"]
 MONEDAS      = ["MXN", "EUR", "USD"]
 PAGADORES    = ["Papá", "Mamá"]
 RUBROS       = ["🏨 Hospedaje", "✈️ Vuelos", "🚆 Trenes", "🚗 Transporte local",
