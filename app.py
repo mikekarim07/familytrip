@@ -99,8 +99,8 @@ def get_config() -> dict:
         columna B: valor   (un valor por fila)
     """
     defaults = {
-        "ciudades": ["Madrid", "Barcelona", "París", "Roma", "Lisboa",
-                     "Amsterdam", "Londres", "Otra"],
+        "ciudades": ["Mexico", "Madrid", "Barcelona", "París", "Bruselas", "Brujas", "Estrasburgo", "Venecia", "Milan", "Florencia", "Roma", "Pisa", "Capri"
+                     ],
     }
     try:
         ws   = get_client().open(SHEET_NAME).worksheet("config")
@@ -129,9 +129,8 @@ def get_ciudades() -> list:
 
 def _slug(text: str) -> str:
     abrevs = {
-        "MADRID": "MAD", "BARCELONA": "BCN", "PARÍS": "PAR", "PARIS": "PAR",
-        "ROMA": "ROM", "LISBOA": "LIS", "AMSTERDAM": "AMS", "LONDRES": "LON",
-        "OTRA": "OTR",
+        "MEXICO": "MEX", "MADRID": "MAD", "BRUSSELAS": "BRS", "BRUJAS": "BRU", "STRASBURGO": "STS", "MILAN": "MIL", "VENECIA": "VEN", "FLORENCIA": "FLO", "BARCELONA": "BCN", "PARÍS": "PAR", "PARIS": "PAR",
+        "ROMA": "ROM"
     }
     upper = text.upper().strip()
     for k, v in abrevs.items():
