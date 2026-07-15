@@ -51,13 +51,13 @@ def load_presupuestos() -> dict:
     """
     [PRESUPUESTOS]
     total   = "300000"
-    Papa    = "120000"
-    Mama    = "100000"
+    Papá    = "120000"
+    Mamá    = "100000"
     Analu   = "40000"
     Sebas   = "40000"
     """
-    defaults = {"total": 300_000, "Papa": 120_000, "Mama": 100_000,
-                "Analu": 40_000, "Sebas": 40_000}
+    defaults = {"total": 300_000, "Papá": 150_000, "Mama": 150_000,
+                "Analu": 5_000, "Sebas": 5_000}
     try:
         raw = st.secrets.get("PRESUPUESTOS", {})
         result = {}
@@ -77,7 +77,7 @@ def load_presupuestos() -> dict:
 def get_pagadores() -> list:
     """Pagadores dinámicos desde Secrets."""
     presup = load_presupuestos()
-    order  = ["Papa", "Mama", "Analu", "Sebas"]
+    order  = ["Papá", "Mamá", "Analu", "Sebas"]
     return [p for p in order if p in presup and p != "total"]
 
 # ═══════════════════════════════════════════════════════════════
@@ -402,7 +402,7 @@ def modulo_dashboard(usuario: dict):
 
     # ── FILA 4: Estado presupuesto familiar ───────────────────────
     st.markdown("### 👨‍👩‍👧‍👦 Estado del presupuesto familiar")
-    emojis_persona = {"Papa": "👨", "Mama": "👩", "Analu": "👧", "Sebas": "🧒"}
+    emojis_persona = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
     cols = st.columns(len(pagadores))
 
     alertas = []
@@ -516,7 +516,7 @@ def modulo_familia():
     presupuestos = load_presupuestos()
     pagadores    = get_pagadores()
     df           = gastos_preparados()
-    emojis       = {"Papa": "👨", "Mama": "👩", "Analu": "👧", "Sebas": "🧒"}
+    emojis       = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
 
     # Selector de persona
     persona_sel = st.segmented_control(
@@ -1014,7 +1014,7 @@ def modulo_presupuesto():
 
     # ── Balance por persona (FILTRADO) ────────────────────────────
     st.subheader("Balance por persona" + (f" — {f_pagador}" if f_pagador != "Todos" else ""))
-    emojis_p = {"Papa": "👨", "Mama": "👩", "Analu": "👧", "Sebas": "🧒"}
+    emojis_p = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
     total_filtrado = df_f["monto_mxn"].sum() if not df_f.empty else 0
 
     personas_bal = [f_pagador] if f_pagador != "Todos" else pagadores
