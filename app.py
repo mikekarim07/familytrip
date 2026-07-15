@@ -375,7 +375,7 @@ def modulo_dashboard(usuario: dict):
               delta=fmt_mxn(proyeccion - presupuestos.get("total", 0)),
               delta_color="inverse")
     dias_restantes = max(dias_tot - dias_trans, 0)
-    k4.metric("📅 Días restantes",  f"{dias_restantes} de {dias_tot}")
+    k4.metric("📅 Días restantes",  f"{dias_restantes}")
 
     st.divider()
 
