@@ -336,7 +336,7 @@ def modulo_dashboard(usuario: dict):
             st.markdown(f"## {ciudad_hoy}")
             if hotel_hoy is not None:
                 st.markdown(f"🏨 **{hotel_hoy.get('hotel', '')}**")
-                st.caption(f"📞 {hotel_hoy.get('telefono', '')} · Check-out: {hotel_hoy.get('checkout', '')[:10]}")
+                # st.caption(f"📞 {hotel_hoy.get('telefono', '')} · Check-out: {hotel_hoy.get('checkout', '')[:10]}")
                 if hotel_hoy.get("maps_url"):
                     st.link_button("🗺️ Ver en Maps", hotel_hoy.get("maps_url", ""))
             else:
