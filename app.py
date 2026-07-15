@@ -56,7 +56,7 @@ def load_presupuestos() -> dict:
     Analu   = "40000"
     Sebas   = "40000"
     """
-    defaults = {"total": 300_000, "Papá": 150_000, "Mama": 150_000,
+    defaults = {"total": 300_000, "Papá": 150_000, "Mamá": 150_000,
                 "Analu": 5_000, "Sebas": 5_000}
     try:
         raw = st.secrets.get("PRESUPUESTOS", {})
@@ -77,7 +77,7 @@ def load_presupuestos() -> dict:
 def get_pagadores() -> list:
     """Pagadores dinámicos desde Secrets."""
     presup = load_presupuestos()
-    order  = ["Papá", "Mamá", "Analucia", "Sebas"]
+    order  = ["Papá", "Mamá", "Analu", "Sebas"]
     return [p for p in order if p in presup and p != "total"]
 
 # ═══════════════════════════════════════════════════════════════
