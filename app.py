@@ -10,7 +10,7 @@ import re
 #  CONSTANTES BASE
 # ═══════════════════════════════════════════════════════════════
 
-SHEET_NAME   = "Karim Family Trip Europe 2026"
+SHEET_NAME   = "FamilyTrip Europe 2026"
 MONEDAS      = ["MXN", "EUR", "USD"]
 RUBROS       = ["🏨 Hospedaje", "✈️ Vuelos", "🚆 Trenes", "🚗 Transporte local",
                 "🍽️ Comida", "🎭 Actividades", "🛍️ Compras", "💊 Farmacia", "🔧 Otros"]
