@@ -77,7 +77,7 @@ def load_presupuestos() -> dict:
 def get_pagadores() -> list:
     """Pagadores dinámicos desde Secrets."""
     presup = load_presupuestos()
-    order  = ["Papá", "Mamá", "Analu", "Sebas"]
+    order  = ["Papá", "Mamá", "Analucia", "Sebas"]
     return [p for p in order if p in presup and p != "total"]
 
 # ═══════════════════════════════════════════════════════════════
