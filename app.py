@@ -447,6 +447,17 @@ def modulo_registro_rapido(rol: str):
     st.caption("Para capturar gastos sobre la marcha.")
 
     with st.container(border=True):
+        # Fila 0: fecha del gasto (por defecto hoy, editable)
+        rq_fecha = st.date_input(
+            "📅 Fecha del gasto",
+            value=date.today(),
+            key="rq_fecha",
+            help="Cambia la fecha si estás registrando un gasto de un día anterior."
+        )
+        es_hoy = (rq_fecha == date.today())
+        if not es_hoy:
+            st.caption(f"⚠️ Registrando gasto de {rq_fecha.strftime('%A %d de %B').capitalize()}")
+
         c1, c2, c3 = st.columns(3)
         with c1:
             rq_quien  = st.selectbox("¿Quién gastó?", pagadores, key="rq_quien")
@@ -471,23 +482,22 @@ def modulo_registro_rapido(rol: str):
             if not rq_desc or rq_monto <= 0:
                 st.warning("Descripción y monto son obligatorios.")
                 return
-            hoy    = date.today()
-            id_gst = gen_id("GST", hoy, rq_desc)
-            id_evt = gen_id("EVT", hoy, rq_desc)
-            # ← ciudad incluida en gastos (col 17)
+            id_gst = gen_id("GST", rq_fecha, rq_desc)
+            id_evt = gen_id("EVT", rq_fecha, rq_desc)
             ok1 = save_row("gastos", [
                 id_gst, "", "", id_evt,
-                str(hoy), rq_rubro, rq_desc,
+                str(rq_fecha), rq_rubro, rq_desc,
                 1, rq_monto, 0, rq_monto, rq_monto,
                 rq_moneda, rq_mxn, rq_quien, "", rq_ciudad
             ])
             ok2 = save_row("itinerario", [
-                id_evt, str(hoy),
+                id_evt, str(rq_fecha),
                 datetime.now().strftime("%H:%M"),
                 rq_rubro, rq_desc, "", rq_ciudad, "", "", ""
             ])
             if ok1 and ok2:
-                st.success(f"✅ {rq_quien} · {rq_desc} · {fmt_mxn(rq_mxn)} · 📍 {rq_ciudad}")
+                fecha_label = "hoy" if es_hoy else rq_fecha.strftime("%d/%m")
+                st.success(f"✅ {rq_quien} · {rq_desc} · {fmt_mxn(rq_mxn)} · 📍 {rq_ciudad} · 📅 {fecha_label}")
                 if rq_moneda != "MXN" and rq_monto > 0 and rq_mxn > 0:
                     st.caption(calc_tc(rq_monto, rq_mxn, rq_moneda))
 
