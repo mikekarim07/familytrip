@@ -16,7 +16,6 @@ RUBROS       = ["🏨 Hospedaje", "✈️ Vuelos", "🚆 Trenes", "🚗 Transpor
                 "🍽️ Comida", "🎭 Actividades", "🛍️ Compras", "💊 Farmacia", "🔧 Otros"]
 TIPOS_TRANSP = ["✈️ Vuelo", "🚄 Tren AVE", "🚆 Tren regional", "🚌 Autobús",
                 "⛴️ Ferry", "🚗 Renta de auto", "🚕 Uber/Taxi", "🚇 Metro/Bus ciudad"]
-
 FECHA_INICIO = date(2026, 7, 13)
 FECHA_FIN    = date(2026, 8, 15)
 
@@ -25,13 +24,6 @@ FECHA_FIN    = date(2026, 8, 15)
 # ═══════════════════════════════════════════════════════════════
 
 def load_pins() -> dict:
-    """
-    [PINS]
-    "1234" = "Papá|admin|👨"
-    "5678" = "Mamá|coeditor|👩"
-    "1111" = "Analu|viewer|👧"
-    "2222" = "Sebas|viewer|🧒"
-    """
     pins = {}
     try:
         raw = st.secrets.get("PINS", {})
@@ -48,14 +40,6 @@ def load_pins() -> dict:
     return pins
 
 def load_presupuestos() -> dict:
-    """
-    [PRESUPUESTOS]
-    total   = "300000"
-    Papá    = "120000"
-    Mamá    = "100000"
-    Analu   = "40000"
-    Sebas   = "40000"
-    """
     defaults = {"total": 300_000, "Papá": 150_000, "Mamá": 150_000,
                 "Analu": 5_000, "Sebas": 5_000}
     try:
@@ -66,7 +50,6 @@ def load_presupuestos() -> dict:
                 result[k] = float(v)
             except Exception:
                 result[k] = defaults.get(k, 0)
-        # fallback para claves faltantes
         for k, v in defaults.items():
             if k not in result:
                 result[k] = v
@@ -75,7 +58,6 @@ def load_presupuestos() -> dict:
         return defaults
 
 def get_pagadores() -> list:
-    """Pagadores dinámicos desde Secrets."""
     presup = load_presupuestos()
     order  = ["Papá", "Mamá", "Analu", "Sebas"]
     return [p for p in order if p in presup and p != "total"]
@@ -205,7 +187,6 @@ def widget_monto(key_prefix: str):
     return monto_orig, moneda, monto_mxn
 
 def gastos_preparados() -> pd.DataFrame:
-    """Devuelve df de gastos con tipos numéricos listos."""
     df = get_df("gastos")
     if df.empty:
         return df
@@ -213,6 +194,11 @@ def gastos_preparados() -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
     df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+    # Normalizar ciudad: si viene vacía, dejar cadena vacía
+    if "ciudad" not in df.columns:
+        df["ciudad"] = ""
+    else:
+        df["ciudad"] = df["ciudad"].fillna("").astype(str)
     return df
 
 def dias_transcurridos() -> int:
@@ -257,18 +243,17 @@ def logout():
     st.rerun()
 
 # ═══════════════════════════════════════════════════════════════
-#  MÓDULO: DASHBOARD "BUENOS DÍAS"
+#  MÓDULO: DASHBOARD
 # ═══════════════════════════════════════════════════════════════
 
 def modulo_dashboard(usuario: dict):
-    nombre    = usuario["nombre"]
-    emoji_u   = usuario["emoji"]
-    hoy       = date.today()
+    nombre       = usuario["nombre"]
+    emoji_u      = usuario["emoji"]
+    hoy          = date.today()
     presupuestos = load_presupuestos()
     pagadores    = get_pagadores()
 
-    # Saludo dinámico
-    hora = datetime.now().hour
+    hora   = datetime.now().hour
     saludo = "🌅 Buenos días" if hora < 12 else ("☀️ Buenas tardes" if hora < 19 else "🌙 Buenas noches")
     st.markdown(
         f"<h1 style='margin-bottom:0'>{saludo}, {emoji_u} {nombre}</h1>"
@@ -277,9 +262,8 @@ def modulo_dashboard(usuario: dict):
     )
     st.divider()
 
-    # ── Ciudad actual y hotel ────────────────────────────────────
-    df_itin  = get_df("itinerario")
-    df_aloj  = get_df("alojamiento")
+    df_itin   = get_df("itinerario")
+    df_aloj   = get_df("alojamiento")
     df_transp = get_df("transportes")
 
     ciudad_hoy = "—"
@@ -288,12 +272,11 @@ def modulo_dashboard(usuario: dict):
         df_itin["fecha"] = pd.to_datetime(df_itin["fecha"], errors="coerce")
         eventos_hoy = df_itin[df_itin["fecha"].dt.date == hoy]
         if not eventos_hoy.empty:
-            ciudad_hoy = eventos_hoy["ciudad"].dropna().iloc[0]
+            ciudad_hoy = str(eventos_hoy["ciudad"].dropna().iloc[0]) if not eventos_hoy["ciudad"].dropna().empty else "—"
         else:
-            # Ciudad más reciente antes de hoy
             pasados = df_itin[df_itin["fecha"].dt.date <= hoy].sort_values("fecha")
-            if not pasados.empty:
-                ciudad_hoy = pasados["ciudad"].dropna().iloc[-1]
+            if not pasados.empty and not pasados["ciudad"].dropna().empty:
+                ciudad_hoy = str(pasados["ciudad"].dropna().iloc[-1])
 
     if not df_aloj.empty:
         df_aloj["checkin"]  = pd.to_datetime(df_aloj["checkin"],  errors="coerce")
@@ -305,8 +288,7 @@ def modulo_dashboard(usuario: dict):
         if not hoteles_activos.empty:
             hotel_hoy = hoteles_activos.iloc[0]
 
-    # ── Gastos de hoy ────────────────────────────────────────────
-    df_gst = gastos_preparados()
+    df_gst          = gastos_preparados()
     gasto_hoy_total = 0.0
     promedio_diario = 0.0
     proyeccion      = 0.0
@@ -314,13 +296,11 @@ def modulo_dashboard(usuario: dict):
     dias_tot        = dias_totales()
 
     if not df_gst.empty:
-        mask_hoy       = df_gst["fecha"].dt.date == hoy
-        gasto_hoy_total = df_gst[mask_hoy]["monto_mxn"].sum()
-        total_gastado  = df_gst["monto_mxn"].sum()
+        gasto_hoy_total = df_gst[df_gst["fecha"].dt.date == hoy]["monto_mxn"].sum()
+        total_gastado   = df_gst["monto_mxn"].sum()
         promedio_diario = total_gastado / dias_trans if dias_trans > 0 else 0
         proyeccion      = total_gastado + promedio_diario * (dias_tot - dias_trans)
 
-    # ── Próximo transporte ────────────────────────────────────────
     proximo_transp = None
     if not df_transp.empty:
         df_transp["fecha"] = pd.to_datetime(df_transp["fecha"], errors="coerce")
@@ -328,17 +308,21 @@ def modulo_dashboard(usuario: dict):
         if not futuros.empty:
             proximo_transp = futuros.iloc[0]
 
-    # ── FILA 1: Ubicación ─────────────────────────────────────────
+    # ── Ubicación ────────────────────────────────────────────────
     st.markdown("### 📍 Hoy estamos en")
     col1, col2 = st.columns(2)
     with col1:
         with st.container(border=True):
             st.markdown(f"## {ciudad_hoy}")
             if hotel_hoy is not None:
-                st.markdown(f"🏨 **{hotel_hoy.get('hotel', '')}**")
-                # st.caption(f"📞 {hotel_hoy.get('telefono', '')} · Check-out: {hotel_hoy.get('checkout', '')[:10]}")
-                if hotel_hoy.get("maps_url"):
-                    st.link_button("🗺️ Ver en Maps", hotel_hoy.get("maps_url", ""))
+                nombre_hotel = str(hotel_hoy.get("hotel") or "")
+                tel_hotel    = str(hotel_hoy.get("telefono") or "")
+                cout_hotel   = str(hotel_hoy.get("checkout") or "")[:10]
+                maps_hotel   = str(hotel_hoy.get("maps_url") or "").strip()
+                st.markdown(f"🏨 **{nombre_hotel}**")
+                st.caption(f"📞 {tel_hotel} · Check-out: {cout_hotel}")
+                if maps_hotel:
+                    st.link_button("🗺️ Ver en Maps", maps_hotel)
             else:
                 st.caption("Sin hotel registrado para hoy.")
 
@@ -347,39 +331,39 @@ def modulo_dashboard(usuario: dict):
             with st.container(border=True):
                 st.markdown("### 🚌 Próximo transporte")
                 st.markdown(
-                    f"**{proximo_transp.get('tipo','')}** "
-                    f"{proximo_transp.get('proveedor','')} "
-                    f"`{proximo_transp.get('numero','')}`"
+                    f"**{str(proximo_transp.get('tipo') or '')}** "
+                    f"{str(proximo_transp.get('proveedor') or '')} "
+                    f"`{str(proximo_transp.get('numero') or '')}`"
                 )
                 st.markdown(
-                    f"📅 {str(proximo_transp.get('fecha',''))[:10]} &nbsp; "
-                    f"🛫 {proximo_transp.get('hora_salida','')} → "
-                    f"🛬 {proximo_transp.get('hora_llegada','')}"
+                    f"📅 {str(proximo_transp.get('fecha') or '')[:10]} &nbsp; "
+                    f"🛫 {str(proximo_transp.get('hora_salida') or '')} → "
+                    f"🛬 {str(proximo_transp.get('hora_llegada') or '')}"
                 )
                 st.markdown(
-                    f"{proximo_transp.get('origen_ciudad','')} → "
-                    f"**{proximo_transp.get('destino_ciudad','')}**"
+                    f"{str(proximo_transp.get('origen_ciudad') or '')} → "
+                    f"**{str(proximo_transp.get('destino_ciudad') or '')}**"
                 )
-                hora_lim = proximo_transp.get("hora_limite", "")
+                hora_lim = str(proximo_transp.get("hora_limite") or "")
                 if hora_lim:
-                    st.warning(f"⏰ Estar en {proximo_transp.get('origen_lugar','')} a las **{hora_lim}**")
-
+                    st.warning(
+                        f"⏰ Estar en {str(proximo_transp.get('origen_lugar') or '')} "
+                        f"a las **{hora_lim}**"
+                    )
     st.divider()
 
-    # ── FILA 2: Gastos del día e indicadores ─────────────────────
+    # ── Indicadores ──────────────────────────────────────────────
     st.markdown("### 💰 Indicadores financieros")
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("💸 Gasto de hoy",    fmt_mxn(gasto_hoy_total))
-    k2.metric("📊 Promedio diario", fmt_mxn(promedio_diario))
+    k1.metric("💸 Gasto de hoy",     fmt_mxn(gasto_hoy_total))
+    k2.metric("📊 Promedio diario",  fmt_mxn(promedio_diario))
     k3.metric("🔮 Proyección final", fmt_mxn(proyeccion),
               delta=fmt_mxn(proyeccion - presupuestos.get("total", 0)),
               delta_color="inverse")
-    dias_restantes = max(dias_tot - dias_trans, 0)
-    k4.metric("📅 Días restantes",  f"{dias_restantes}")
-
+    k4.metric("📅 Días restantes",   f"{max(dias_tot - dias_trans, 0)}")
     st.divider()
 
-    # ── FILA 3: Actividades del día ───────────────────────────────
+    # ── Actividades del día ───────────────────────────────────────
     st.markdown("### 📅 Actividades de hoy")
     if not df_itin.empty:
         eventos_hoy_df = df_itin[df_itin["fecha"].dt.date == hoy].sort_values("hora")
@@ -390,27 +374,28 @@ def modulo_dashboard(usuario: dict):
                 with st.container(border=True):
                     ca, cb = st.columns([1, 7])
                     with ca:
-                        st.markdown(f"**{str(ev.get('hora',''))[:5]}**")
+                        st.markdown(f"**{str(ev.get('hora') or '')[:5]}**")
                     with cb:
-                        st.markdown(f"{ev.get('tipo','ℹ️')} **{ev.get('titulo','')}**")
-                        if ev.get("descripcion"):
-                            st.caption(ev.get("descripcion",""))
+                        tipo_ev = str(ev.get("tipo") or "ℹ️")
+                        tit_ev  = str(ev.get("titulo") or "")
+                        st.markdown(f"{tipo_ev} **{tit_ev}**")
+                        desc_ev = str(ev.get("descripcion") or "").strip()
+                        if desc_ev:
+                            st.caption(desc_ev)
     else:
         st.info("Sin eventos en el itinerario.")
-
     st.divider()
 
-    # ── FILA 4: Estado presupuesto familiar ───────────────────────
+    # ── Presupuesto familiar ──────────────────────────────────────
     st.markdown("### 👨‍👩‍👧‍👦 Estado del presupuesto familiar")
     emojis_persona = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
-    cols = st.columns(len(pagadores))
-
+    cols   = st.columns(len(pagadores))
     alertas = []
+
     for i, persona in enumerate(pagadores):
         presup_p = presupuestos.get(persona, 0)
-        gasto_p  = 0.0
-        if not df_gst.empty and "pagado_por" in df_gst.columns:
-            gasto_p = df_gst[df_gst["pagado_por"] == persona]["monto_mxn"].sum()
+        gasto_p  = df_gst[df_gst["pagado_por"] == persona]["monto_mxn"].sum() if (
+            not df_gst.empty and "pagado_por" in df_gst.columns) else 0.0
         resto_p  = presup_p - gasto_p
         pct_p    = min(gasto_p / presup_p, 1.0) if presup_p > 0 else 0
         color_p  = "#22c55e" if pct_p < 0.70 else ("#f59e0b" if pct_p < 0.90 else "#ef4444")
@@ -423,7 +408,7 @@ def modulo_dashboard(usuario: dict):
                     unsafe_allow_html=True
                 )
                 st.markdown(f"**{persona}**")
-                st.caption(f"Presupuesto: {fmt_mxn(presup_p)}")
+                st.caption(fmt_mxn(presup_p))
                 st.markdown(f"""
                     <div style='background:#e5e7eb;border-radius:6px;height:10px;margin:4px 0'>
                         <div style='background:{color_p};width:{pct_p*100:.0f}%;
@@ -436,19 +421,18 @@ def modulo_dashboard(usuario: dict):
         if pct_p >= 0.80:
             alertas.append((persona, pct_p, presup_p, gasto_p))
 
-    # ── ALERTAS ───────────────────────────────────────────────────
     if alertas:
         st.divider()
         st.markdown("### ⚠️ Alertas")
         for persona, pct, presup, gasto in alertas:
-            nivel = "🔴 **Presupuesto agotado**" if pct >= 1.0 else "🟡 **Alerta: más del 80% consumido**"
+            nivel = "🔴 **Presupuesto agotado**" if pct >= 1.0 else "🟡 **Más del 80% consumido**"
             st.warning(
                 f"{nivel} · {emojis_persona.get(persona,'👤')} **{persona}**: "
                 f"{fmt_mxn(gasto)} de {fmt_mxn(presup)} ({pct*100:.0f}%)"
             )
 
 # ═══════════════════════════════════════════════════════════════
-#  MÓDULO: REGISTRO RÁPIDO (para usar sobre la marcha)
+#  MÓDULO: REGISTRO RÁPIDO
 # ═══════════════════════════════════════════════════════════════
 
 def modulo_registro_rapido(rol: str):
@@ -460,7 +444,7 @@ def modulo_registro_rapido(rol: str):
     ciudades  = get_ciudades()
 
     st.header("⚡ Registro rápido")
-    st.caption("Para capturar gastos sobre la marcha, sin formularios complejos.")
+    st.caption("Para capturar gastos sobre la marcha.")
 
     with st.container(border=True):
         c1, c2, c3 = st.columns(3)
@@ -490,11 +474,12 @@ def modulo_registro_rapido(rol: str):
             hoy    = date.today()
             id_gst = gen_id("GST", hoy, rq_desc)
             id_evt = gen_id("EVT", hoy, rq_desc)
+            # ← ciudad incluida en gastos (col 17)
             ok1 = save_row("gastos", [
                 id_gst, "", "", id_evt,
                 str(hoy), rq_rubro, rq_desc,
                 1, rq_monto, 0, rq_monto, rq_monto,
-                rq_moneda, rq_mxn, rq_quien, ""
+                rq_moneda, rq_mxn, rq_quien, "", rq_ciudad
             ])
             ok2 = save_row("itinerario", [
                 id_evt, str(hoy),
@@ -502,12 +487,12 @@ def modulo_registro_rapido(rol: str):
                 rq_rubro, rq_desc, "", rq_ciudad, "", "", ""
             ])
             if ok1 and ok2:
-                st.success(f"✅ {rq_quien} · {rq_desc} · {fmt_mxn(rq_mxn)}")
+                st.success(f"✅ {rq_quien} · {rq_desc} · {fmt_mxn(rq_mxn)} · 📍 {rq_ciudad}")
                 if rq_moneda != "MXN" and rq_monto > 0 and rq_mxn > 0:
                     st.caption(calc_tc(rq_monto, rq_mxn, rq_moneda))
 
 # ═══════════════════════════════════════════════════════════════
-#  MÓDULO: FAMILIA  (dashboard individual por persona)
+#  MÓDULO: FAMILIA
 # ═══════════════════════════════════════════════════════════════
 
 def modulo_familia():
@@ -515,10 +500,10 @@ def modulo_familia():
 
     presupuestos = load_presupuestos()
     pagadores    = get_pagadores()
-    df           = gastos_preparados()
+    df_full      = gastos_preparados()
     emojis       = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
 
-    # Selector de persona
+    # ── Selector de persona ───────────────────────────────────────
     persona_sel = st.segmented_control(
         "Ver detalle de:", options=pagadores,
         format_func=lambda p: f"{emojis.get(p,'👤')} {p}",
@@ -527,69 +512,167 @@ def modulo_familia():
     st.divider()
 
     presup_p = presupuestos.get(persona_sel, 0)
-    df_p = df[df["pagado_por"] == persona_sel] if (not df.empty and "pagado_por" in df.columns) else pd.DataFrame()
 
-    total_p  = df_p["monto_mxn"].sum() if not df_p.empty else 0
-    resto_p  = presup_p - total_p
-    pct_p    = min(total_p / presup_p, 1.0) if presup_p > 0 else 0
-    color_p  = "#22c55e" if pct_p < 0.70 else ("#f59e0b" if pct_p < 0.90 else "#ef4444")
+    # DataFrame base de esta persona (sin filtros aún — para KPIs globales)
+    df_persona = (df_full[df_full["pagado_por"] == persona_sel].copy()
+                  if (not df_full.empty and "pagado_por" in df_full.columns)
+                  else pd.DataFrame())
 
-    # KPIs
+    total_p = df_persona["monto_mxn"].sum() if not df_persona.empty else 0
+    resto_p = presup_p - total_p
+    pct_p   = min(total_p / presup_p, 1.0) if presup_p > 0 else 0
+    color_p = "#22c55e" if pct_p < 0.70 else ("#f59e0b" if pct_p < 0.90 else "#ef4444")
+
+    # ── KPIs globales (sin filtros) ───────────────────────────────
     k1, k2, k3, k4 = st.columns(4)
     k1.metric(f"{emojis.get(persona_sel,'👤')} Presupuesto", fmt_mxn(presup_p))
-    k2.metric("Gastado",     fmt_mxn(total_p))
-    k3.metric("Disponible",  fmt_mxn(resto_p))
-    k4.metric("% Utilizado", f"{pct_p*100:.1f}%")
+    k2.metric("Gastado total",  fmt_mxn(total_p))
+    k3.metric("Disponible",     fmt_mxn(resto_p))
+    k4.metric("% Utilizado",    f"{pct_p*100:.1f}%")
 
     st.markdown(f"""
-        <div style='background:#e5e7eb;border-radius:8px;height:16px;margin:4px 0 20px'>
+        <div style='background:#e5e7eb;border-radius:8px;height:16px;margin:4px 0 4px'>
             <div style='background:{color_p};width:{pct_p*100:.1f}%;
                         height:16px;border-radius:8px'></div>
         </div>
     """, unsafe_allow_html=True)
-
     if pct_p >= 0.80:
         nivel = "🔴 Presupuesto agotado" if pct_p >= 1.0 else "🟡 Más del 80% consumido"
         st.warning(f"⚠️ {nivel}")
 
-    if df_p.empty:
-        st.info(f"Aún no hay gastos registrados para {persona_sel}.")
-        return
+    st.divider()
 
-    # Indicadores de tiempo real
+    # ── Indicadores en tiempo real (sin filtros) ──────────────────
     hoy        = date.today()
     dias_trans = dias_transcurridos()
     dias_tot   = dias_totales()
 
-    gasto_hoy_p  = df_p[df_p["fecha"].dt.date == hoy]["monto_mxn"].sum() if not df_p.empty else 0
+    gasto_hoy_p   = df_persona[df_persona["fecha"].dt.date == hoy]["monto_mxn"].sum() if not df_persona.empty else 0
     prom_diario_p = total_p / dias_trans if dias_trans > 0 else 0
     proyeccion_p  = total_p + prom_diario_p * (dias_tot - dias_trans)
 
     st.subheader("📊 Indicadores en tiempo real")
     i1, i2, i3 = st.columns(3)
-    i1.metric("Hoy",             fmt_mxn(gasto_hoy_p))
-    i2.metric("Promedio diario", fmt_mxn(prom_diario_p))
+    i1.metric("Hoy",              fmt_mxn(gasto_hoy_p))
+    i2.metric("Promedio diario",  fmt_mxn(prom_diario_p))
     i3.metric("Proyección final", fmt_mxn(proyeccion_p),
               delta=fmt_mxn(proyeccion_p - presup_p), delta_color="inverse")
 
-    # Gráfica por rubro
-    st.subheader("Gastos por rubro")
-    por_rubro = df_p.groupby("rubro")["monto_mxn"].sum().reset_index()
-    por_rubro.columns = ["Rubro", "MXN"]
-    st.bar_chart(por_rubro.set_index("Rubro"))
+    st.divider()
 
-    # Historial de gastos
-    st.subheader(f"Historial de {persona_sel}")
-    cols_show = ["fecha", "rubro", "descripcion", "monto_total", "moneda", "monto_mxn"]
-    cols_ok   = [c for c in cols_show if c in df_p.columns]
-    rename_map = {"fecha": "Fecha", "rubro": "Rubro", "descripcion": "Descripción",
-                  "monto_total": "Orig.", "moneda": "Mon.", "monto_mxn": "MXN"}
-    df_show = (df_p[cols_ok].rename(columns=rename_map)
-               .sort_values("Fecha", ascending=False))
-    st.dataframe(df_show, use_container_width=True, hide_index=True)
+    # ── FILTROS ───────────────────────────────────────────────────
+    st.subheader("🔍 Filtros")
+
+    if df_persona.empty:
+        st.info(f"Aún no hay gastos registrados para {persona_sel}.")
+        return
+
+    # Ciudad — desde los valores reales del Sheet
+    ciudades_en_gastos = sorted(
+        [c for c in df_persona["ciudad"].unique() if c and str(c).strip()]
+    )
+    col_f1, col_f2 = st.columns([1, 2])
+    with col_f1:
+        ciudades_opciones = ["Todas"] + ciudades_en_gastos
+        f_ciudad = st.selectbox("📍 Ciudad", ciudades_opciones, key="fam_ciudad")
+
+    # Rubros — checkboxes desde valores reales del Sheet
+    with col_f2:
+        rubros_en_gastos = sorted(
+            [r for r in df_persona["rubro"].unique() if r and str(r).strip()]
+        ) if "rubro" in df_persona.columns else []
+
+        st.markdown("**Rubros a incluir:**")
+        # Inicializar estado de checkboxes si no existe
+        if "fam_rubros_sel" not in st.session_state:
+            st.session_state["fam_rubros_sel"] = {r: True for r in rubros_en_gastos}
+        # Asegurar que rubros nuevos estén incluidos
+        for r in rubros_en_gastos:
+            if r not in st.session_state["fam_rubros_sel"]:
+                st.session_state["fam_rubros_sel"][r] = True
+
+        cb_cols = st.columns(min(len(rubros_en_gastos), 3))
+        rubros_activos = []
+        for idx, rubro in enumerate(rubros_en_gastos):
+            col_cb = cb_cols[idx % len(cb_cols)]
+            checked = col_cb.checkbox(
+                rubro, value=st.session_state["fam_rubros_sel"].get(rubro, True),
+                key=f"fam_cb_{rubro}"
+            )
+            st.session_state["fam_rubros_sel"][rubro] = checked
+            if checked:
+                rubros_activos.append(rubro)
+
+    # Botón "Seleccionar todos / Ninguno"
+    bc1, bc2, _ = st.columns([1, 1, 4])
+    if bc1.button("✅ Todos", key="fam_all"):
+        for r in rubros_en_gastos:
+            st.session_state["fam_rubros_sel"][r] = True
+        st.rerun()
+    if bc2.button("⬜ Ninguno", key="fam_none"):
+        for r in rubros_en_gastos:
+            st.session_state["fam_rubros_sel"][r] = False
+        st.rerun()
+
+    st.divider()
+
+    # ── Aplicar filtros ───────────────────────────────────────────
+    df_fil = df_persona.copy()
+    if f_ciudad != "Todas":
+        df_fil = df_fil[df_fil["ciudad"] == f_ciudad]
+    if rubros_activos and "rubro" in df_fil.columns:
+        df_fil = df_fil[df_fil["rubro"].isin(rubros_activos)]
+
+    total_fil = df_fil["monto_mxn"].sum() if not df_fil.empty else 0
+
+    # Etiqueta de filtros activos
+    filtros_label = []
+    if f_ciudad != "Todas":
+        filtros_label.append(f"📍 {f_ciudad}")
+    if len(rubros_activos) < len(rubros_en_gastos):
+        filtros_label.append(f"{len(rubros_activos)} rubros")
+    if filtros_label:
+        st.info(f"Filtros activos: {' · '.join(filtros_label)} — Total: {fmt_mxn(total_fil)}")
+    else:
+        st.caption(f"Total con filtros: {fmt_mxn(total_fil)}")
+
+    # ── Gráfica por rubro (filtrada) ──────────────────────────────
+    if not df_fil.empty and "rubro" in df_fil.columns:
+        st.subheader("Gastos por rubro")
+        por_rubro = df_fil.groupby("rubro")["monto_mxn"].sum().reset_index()
+        por_rubro.columns = ["Rubro", "MXN"]
+        por_rubro = por_rubro.sort_values("MXN", ascending=False)
+        st.bar_chart(por_rubro.set_index("Rubro"))
+
+    # ── Gráfica por ciudad (filtrada) — solo si hay varias ciudades ──
+    if not df_fil.empty and "ciudad" in df_fil.columns:
+        ciudades_con_gasto = df_fil[df_fil["ciudad"].str.strip() != ""]["ciudad"].unique()
+        if len(ciudades_con_gasto) > 1:
+            st.subheader("Gastos por ciudad")
+            por_ciudad = df_fil[df_fil["ciudad"].str.strip() != ""].groupby("ciudad")["monto_mxn"].sum().reset_index()
+            por_ciudad.columns = ["Ciudad", "MXN"]
+            por_ciudad = por_ciudad.sort_values("MXN", ascending=False)
+            st.bar_chart(por_ciudad.set_index("Ciudad"))
+
+    # ── Historial filtrado ────────────────────────────────────────
+    st.subheader(f"Historial — {persona_sel}")
+    if df_fil.empty:
+        st.info("Sin gastos con los filtros actuales.")
+    else:
+        cols_show  = ["fecha", "ciudad", "rubro", "descripcion", "monto_total", "moneda", "monto_mxn"]
+        cols_ok    = [c for c in cols_show if c in df_fil.columns]
+        rename_map = {
+            "fecha": "Fecha", "ciudad": "Ciudad", "rubro": "Rubro",
+            "descripcion": "Descripción", "monto_total": "Orig.",
+            "moneda": "Mon.", "monto_mxn": "MXN"
+        }
+        df_show = (df_fil[cols_ok].rename(columns=rename_map)
+                   .sort_values("Fecha", ascending=False))
+        st.dataframe(df_show, use_container_width=True, hide_index=True)
+        st.caption(f"**Total mostrado: {fmt_mxn(total_fil)}** de {fmt_mxn(total_p)} gastado por {persona_sel}")
 
 # ═══════════════════════════════════════════════════════════════
-#  MÓDULO: NUEVO REGISTRO (formulario completo)
+#  MÓDULO: NUEVO REGISTRO
 # ═══════════════════════════════════════════════════════════════
 
 def formulario_nuevo_registro(rol: str):
@@ -641,8 +724,8 @@ def formulario_nuevo_registro(rol: str):
         if moneda_h == "MXN":
             monto_mxn_h = h_total
 
-        imp_h   = st.number_input("Impuestos incluidos",
-                                   min_value=0.0, step=1.0, format="%.2f", key="h_imp",
+        imp_h   = st.number_input("Impuestos incluidos", min_value=0.0, step=1.0,
+                                   format="%.2f", key="h_imp",
                                    help="0 si el monto ya es todo incluido.")
         h_notas = st.text_area("Notas adicionales", height=60)
 
@@ -664,11 +747,12 @@ def formulario_nuevo_registro(rol: str):
                 id_hsp, h_ciudad, h_hotel, h_dir, h_tel,
                 h_conf, str(h_cin), str(h_cout), h_maps
             ])
+            # ← ciudad incluida (col 17)
             ok2 = save_row("gastos", [
                 id_gst, id_hsp, "", "",
                 str(h_cin), "🏨 Hospedaje", f"Hotel {h_hotel} – {h_ciudad}",
                 noches, h_x_n, imp_h, round(h_total - imp_h, 2), h_total,
-                moneda_h, monto_mxn_h, h_pagador, h_notas
+                moneda_h, monto_mxn_h, h_pagador, h_notas, h_ciudad
             ])
             ok3 = save_row("itinerario", [
                 id_cin, str(h_cin), "15:00", "🏨 Check-in",
@@ -745,11 +829,12 @@ def formulario_nuevo_registro(rol: str):
                 hora_lim, t_ins_ida, t_ins_llg,
                 t_doc, monto_orig_t, moneda_t, monto_mxn_t, t_pagador, t_notas
             ])
+            # ← ciudad origen incluida en gastos (col 17)
             ok2 = save_row("gastos", [
                 id_gst, "", id_trn, "",
                 str(t_fecha), rubro_g, titulo,
                 1, monto_orig_t, 0, monto_orig_t, monto_orig_t,
-                moneda_t, monto_mxn_t, t_pagador, t_notas
+                moneda_t, monto_mxn_t, t_pagador, t_notas, t_oc
             ])
             ok3 = save_row("itinerario", [
                 id_evt, str(t_fecha), str(t_hora_sal)[:5], t_tipo, titulo,
@@ -786,11 +871,12 @@ def formulario_nuevo_registro(rol: str):
             id_gst = gen_id("GST", a_fecha, a_titulo)
             id_evt = gen_id("EVT", a_fecha, a_titulo)
 
+            # ← ciudad incluida en gastos (col 17)
             ok1 = save_row("gastos", [
                 id_gst, "", "", id_evt if a_al_itin else "",
                 str(a_fecha), a_rubro, a_titulo,
                 1, monto_orig_a, 0, monto_orig_a, monto_orig_a,
-                moneda_a, monto_mxn_a, a_pagador, a_notas
+                moneda_a, monto_mxn_a, a_pagador, a_notas, a_ciudad
             ])
             ok2 = True
             if a_al_itin:
@@ -799,7 +885,7 @@ def formulario_nuevo_registro(rol: str):
                     a_rubro, a_titulo, a_detalle, a_ciudad, "", "", ""
                 ])
             if ok1 and ok2:
-                st.success(f"✅ {a_titulo} · {fmt_mxn(monto_mxn_a)}")
+                st.success(f"✅ {a_titulo} · {fmt_mxn(monto_mxn_a)} · 📍 {a_ciudad}")
 
 # ═══════════════════════════════════════════════════════════════
 #  MÓDULO: ITINERARIO
@@ -911,8 +997,8 @@ def modulo_alojamiento():
         id_hsp = h.get("id_hospedaje","")
         activo = False
         try:
-            cin  = pd.to_datetime(h.get("checkin")).date()
-            cout = pd.to_datetime(h.get("checkout")).date()
+            cin    = pd.to_datetime(h.get("checkin")).date()
+            cout   = pd.to_datetime(h.get("checkout")).date()
             activo = cin <= hoy <= cout
         except Exception:
             pass
@@ -944,7 +1030,7 @@ def modulo_alojamiento():
                         st.metric("Total pagado", fmt_mxn(g["monto_mxn"].sum()))
 
 # ═══════════════════════════════════════════════════════════════
-#  MÓDULO: PRESUPUESTO (con balance filtrado)
+#  MÓDULO: PRESUPUESTO
 # ═══════════════════════════════════════════════════════════════
 
 def modulo_presupuesto():
@@ -958,12 +1044,12 @@ def modulo_presupuesto():
         st.info("Aún no hay gastos registrados.")
         return
 
-    df["semana"] = df["fecha"].dt.isocalendar().week.astype(str)
-    presup_total = presupuestos.get("total", 0)
-    total        = df["monto_mxn"].sum()
-    resto        = presup_total - total
-    pct          = min(total / presup_total, 1.0) if presup_total > 0 else 0
-    color        = "#22c55e" if pct < 0.70 else ("#f59e0b" if pct < 0.90 else "#ef4444")
+    df["semana"]  = df["fecha"].dt.isocalendar().week.astype(str)
+    presup_total  = presupuestos.get("total", 0)
+    total         = df["monto_mxn"].sum()
+    resto         = presup_total - total
+    pct           = min(total / presup_total, 1.0) if presup_total > 0 else 0
+    color         = "#22c55e" if pct < 0.70 else ("#f59e0b" if pct < 0.90 else "#ef4444")
 
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Gastado",     fmt_mxn(total))
@@ -979,7 +1065,6 @@ def modulo_presupuesto():
         </div>
     """, unsafe_allow_html=True)
 
-    # ── Filtros ───────────────────────────────────────────────────
     st.subheader("Análisis")
     cf1, cf2, cf3 = st.columns(3)
     f_agrup   = cf1.selectbox("Agrupar por", ["Rubro", "Semana", "Pagador"])
@@ -998,10 +1083,9 @@ def modulo_presupuesto():
         agg.columns = [f_agrup, "MXN"]
         st.bar_chart(agg.set_index(f_agrup))
 
-    # ── Tabla detalle ─────────────────────────────────────────────
     st.subheader("Detalle de gastos")
     cols_map = {
-        "id_gasto": "ID", "fecha": "Fecha", "rubro": "Rubro",
+        "id_gasto": "ID", "fecha": "Fecha", "ciudad": "Ciudad", "rubro": "Rubro",
         "descripcion": "Descripción", "unidades": "Nts/Uds",
         "monto_total": "Total orig.", "moneda": "Mon.",
         "monto_mxn": "Total MXN", "pagado_por": "Pagador",
@@ -1012,22 +1096,18 @@ def modulo_presupuesto():
                .sort_values("Fecha", ascending=False))
     st.dataframe(df_show, use_container_width=True, hide_index=True)
 
-    # ── Balance por persona (FILTRADO) ────────────────────────────
     st.subheader("Balance por persona" + (f" — {f_pagador}" if f_pagador != "Todos" else ""))
-    emojis_p = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
+    emojis_p       = {"Papá": "👨", "Mamá": "👩", "Analu": "👧", "Sebas": "🧒"}
     total_filtrado = df_f["monto_mxn"].sum() if not df_f.empty else 0
+    personas_bal   = [f_pagador] if f_pagador != "Todos" else pagadores
+    cols_bal       = st.columns(len(personas_bal))
 
-    personas_bal = [f_pagador] if f_pagador != "Todos" else pagadores
-    cols_bal = st.columns(len(personas_bal))
     for i, persona in enumerate(personas_bal):
-        presup_p = presupuestos.get(persona, 0)
-        if "pagado_por" in df_f.columns:
-            gasto_p_filtrado = df_f[df_f["pagado_por"] == persona]["monto_mxn"].sum()
-        else:
-            gasto_p_filtrado = 0
-        pct_p    = min(gasto_p_filtrado / presup_p, 1.0) if presup_p > 0 else 0
-        pct_del  = gasto_p_filtrado / total_filtrado * 100 if total_filtrado > 0 else 0
-        color_p  = "#22c55e" if pct_p < 0.70 else ("#f59e0b" if pct_p < 0.90 else "#ef4444")
+        presup_p         = presupuestos.get(persona, 0)
+        gasto_p_filtrado = df_f[df_f["pagado_por"] == persona]["monto_mxn"].sum() if "pagado_por" in df_f.columns else 0
+        pct_p   = min(gasto_p_filtrado / presup_p, 1.0) if presup_p > 0 else 0
+        pct_del = gasto_p_filtrado / total_filtrado * 100 if total_filtrado > 0 else 0
+        color_p = "#22c55e" if pct_p < 0.70 else ("#f59e0b" if pct_p < 0.90 else "#ef4444")
 
         with cols_bal[i]:
             with st.container(border=True):
@@ -1042,20 +1122,17 @@ def modulo_presupuesto():
                     <p style='font-size:0.75rem;margin:0;color:#888'>{pct_p*100:.0f}% de su presupuesto</p>
                 """, unsafe_allow_html=True)
 
-    # ── Detalle por hospedaje ─────────────────────────────────────
     st.subheader("Detalle por hospedaje")
     df_hsp = get_df("alojamiento")
     if not df_hsp.empty and "id_hospedaje" in df.columns:
         for _, h in df_hsp.iterrows():
             id_h     = h.get("id_hospedaje","")
-            gastos_h = df_f[df_f.get("id_hospedaje","") == id_h] if "id_hospedaje" in df_f.columns else pd.DataFrame()
+            gastos_h = df_f[df_f["id_hospedaje"] == id_h] if "id_hospedaje" in df_f.columns else pd.DataFrame()
             if not gastos_h.empty:
                 total_h = gastos_h["monto_mxn"].sum()
                 with st.expander(f"🏨 {h.get('hotel','')} — {fmt_mxn(total_h)}"):
-                    st.dataframe(
-                        gastos_h[["fecha","descripcion","unidades","monto_total","moneda","monto_mxn"]],
-                        use_container_width=True, hide_index=True
-                    )
+                    cols_h = [c for c in ["fecha","ciudad","descripcion","unidades","monto_total","moneda","monto_mxn"] if c in gastos_h.columns]
+                    st.dataframe(gastos_h[cols_h], use_container_width=True, hide_index=True)
 
 # ═══════════════════════════════════════════════════════════════
 #  MÓDULO: DOCUMENTOS
@@ -1151,15 +1228,15 @@ def main():
         if st.button("🚪 Cerrar sesión", use_container_width=True):
             logout()
 
-    if   pagina == "🏠 Inicio":              modulo_dashboard(usuario)
-    elif pagina == "⚡ Registro rápido":     modulo_registro_rapido(rol)
-    elif pagina == "➕ Nuevo registro":      formulario_nuevo_registro(rol)
-    elif pagina == "📅 Itinerario":          modulo_itinerario()
-    elif pagina == "🚌 Transportes":         modulo_transportes()
-    elif pagina == "🏨 Alojamiento":         modulo_alojamiento()
-    elif pagina == "💰 Presupuesto":         modulo_presupuesto()
-    elif pagina == "👨‍👩‍👧‍👦 Familia":            modulo_familia()
-    elif pagina == "📄 Documentos":          modulo_documentos(rol)
+    if   pagina == "🏠 Inicio":          modulo_dashboard(usuario)
+    elif pagina == "⚡ Registro rápido": modulo_registro_rapido(rol)
+    elif pagina == "➕ Nuevo registro":  formulario_nuevo_registro(rol)
+    elif pagina == "📅 Itinerario":      modulo_itinerario()
+    elif pagina == "🚌 Transportes":     modulo_transportes()
+    elif pagina == "🏨 Alojamiento":     modulo_alojamiento()
+    elif pagina == "💰 Presupuesto":     modulo_presupuesto()
+    elif pagina == "👨‍👩‍👧‍👦 Familia":        modulo_familia()
+    elif pagina == "📄 Documentos":      modulo_documentos(rol)
 
 if __name__ == "__main__":
     main()
